@@ -1,0 +1,16 @@
+{
+  "versionName": "1.0.0",
+  "versionCode": 1,
+  "package": "com.kgx2mp3.app",
+  "minSdk": 26,
+  "targetSdk": 35,
+  "abis": [
+    "arm64-v8a",
+    "x86_64"
+  ],
+  "file": "music-transfer-1.0.0-universal.apk",
+  "bytes": 48219532,
+  "sha256": "ec43ea8fab3e53fec7319bade8709ffbfbee56df9a379e2d677ddf049293e4a0",
+  "signed": true,
+  "containsUserAudio": false
+}

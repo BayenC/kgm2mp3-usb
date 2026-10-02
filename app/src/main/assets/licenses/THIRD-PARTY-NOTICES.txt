@@ -1,0 +1,27 @@
+第三方开源组件
+
+KGM 解码算法与查表资料：OpenConverter（Apache License 2.0）
+https://github.com/nowa277/OpenConverter
+固定源代码版本：e037007cc07b619434dc3b00e53b67a09842f849
+本软件将 KGM / KGMA v3 type 1 解码器改为独立流式模块，并增加输入校验、取消和完整音频校验。
+完整来源记录见 OpenConverter-NOTICE.txt。
+
+FFmpegKit 音频库：dev.ffmpegkit-maintained:ffmpeg-kit-audio:8.1.7
+https://github.com/ffmpegkit-maintained/ffmpeg
+FFmpegKit 按 LGPL v3 授权；FFmpeg 与随附第三方音频库保留各自授权。
+库的许可原文已原样保留。GNU GPL v3 文本随 LGPL v3 一同附带；这不表示本软件使用了 GPL 版本的视频编码扩展。
+GNU GPL v3 原文来源：https://github.com/FFmpeg/FFmpeg/blob/n7.1/COPYING.GPLv3
+
+FFmpegKit 音频构建的第三方组件包含 cpu_features、LAME、libiconv、libilbc、libogg、libsndfile、libvorbis、opencore-amr、opus、shine、soxr、speex、twolame、vo-amrwbenc。
+请分别查看授权全文。
+
+Smart Exception：com.arthenica:smart-exception-java:0.2.1 及 smart-exception-common:0.2.1
+https://github.com/tanersener/smart-exception
+固定源代码标签：v0.2.1；提交：e77d0004790d39e5e57888ae8e7292f85711d12f
+Copyright (c) 2019-2020, Taner Sener
+BSD 3-Clause License，授权原文见 SmartException-BSD-3-Clause.txt。
+本软件未修改该组件；供 FFmpegKit 初始化及本地异常报告使用。
+
+AndroidX Core / DocumentFile 与 Kotlin 标准库：Apache License 2.0，各自版权通知保留在发行包内。
+
+本软件提供完整源代码与构建说明，允许修改库并重新构建。
