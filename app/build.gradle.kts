@@ -1,19 +1,20 @@
 import java.util.Properties
 plugins { id("com.android.application"); kotlin("android") }
-val signingFile = rootProject.file("signing/release.properties")
+val signingFile = rootProject.file("signing/kgm2mp3-usb.properties")
 val signingValues = Properties().apply { if (signingFile.exists()) signingFile.inputStream().use(::load) }
 android {
-    namespace = "com.kgx2mp3.app"
+    namespace = "com.kgm2mp3_usb.app"
     compileSdk = 35
     defaultConfig {
-        applicationId = "com.kgx2mp3.app"
+        applicationId = "com.kgm2mp3_usb.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
     }
+    // Opt in to exercising the signed production APK with its matching test signature.
+    testBuildType = providers.gradleProperty("instrumentationBuildType").getOrElse("debug")
     buildFeatures { buildConfig = true }
     signingConfigs {
         if (signingFile.exists()) create("release") {
@@ -24,7 +25,9 @@ android {
         }
     }
     buildTypes {
+        debug { ndk { abiFilters += listOf("arm64-v8a", "x86_64") } }
         release {
+            ndk { abiFilters += "arm64-v8a" }
             isMinifyEnabled = false
             if (signingFile.exists()) signingConfig = signingConfigs.getByName("release")
         }

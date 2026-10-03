@@ -1,60 +1,116 @@
-# 验收记录
+# 1.1.0 验收记录
 
-日期：2026-10-02（Asia/Shanghai）。记录实际执行结果，未以计划代替通过。
+日期：2026-10-03（Asia/Shanghai）。状态：本地可安装 APK 完成，最终界面回归通过；SAF 和实体设备项仍待补，尚未发布 GitHub。
 
-## 自动验证已通过
+## 应用与构建身份
+
+| 项目 | 本次结果 |
+|---|---|
+| 套件名称 | `com.kgm2mp3_usb.app` |
+| 版本 | `1.1.0`，`versionCode = 2` |
+| 最低 / 目标 Android API | 26 / 35 |
+| 正式包架构 | 仅 `arm64-v8a` |
+| 新签名证书 SHA-256 | `74aed6fe1c22a17bde561ae47c7ea2d63390921e86d2fc4725a65f67346e06d0` |
+| 最终正式 APK 大小 | 23,484,946 bytes（23.48 MB） |
+| 最终交付 APK SHA-256 | `6a62e3c3cbf9bb61567e9992078d3d057c9467e61aab02d97c7406f380ff9c41` |
+
+最终正式包较 1.0 的 48,219,532 bytes 缩小约 **51%**。缩小主要来自移除正式手机包里的 x86_64 音讯库；四种输出格式保留。此大小和 SHA-256 对应圆润音符及位置微调后重新构建的 APK。
+
+1.1 新身份已在 Android 13 ARM64 模拟器独立安装，与 1.0 共存。新安装默认 MP3，实际从 `/storage/emulated/0/kgmusic/download/kgmusic` 扫描到 KGM 样本；首次授权不继承 1.0。
+
+## 已完成的自动化验证
 
 | 检查 | 结果 |
 |---|---|
-| KGM JVM 核心测试 | 16 项通过，含独立编码向量、分块、损坏/未知输入、取消、超 2 GiB 偏移及 FLAC STREAMINFO |
-| Android app JVM 测试 | 14 项通过，含文件名规则、覆盖失败回滚、恢复与更新信任策略 |
-| Android 13 / ARM64 仪器测试 | 13 项通过，21.672 秒；实际调用 APK 中原生 FFmpegKit |
-| Python 构建辅助测试 | 9 项通过，含代理、官方 archive 选择；Shell/Python 语法通过 |
-| Debug / 正式 Release APK | 构建成功，Release Lint 0 errors |
-| 最终正式 APK | v2 签名验证通过；ZIP 16 KB 对齐检查通过；全部 arm64-v8a / x86_64 ELF PT_LOAD 对齐为 16 KB |
-| 发布内容 | 无歌曲、签名私钥或本机配置；第三方授权原文已包含 |
+| `kgm-core` JVM | 16 项通过；0 失败、0 错误、0 跳过 |
+| App JVM | 38 项通过；0 失败、0 错误、0 跳过 |
+| JVM 合计 | **54 项通过** |
+| Python 构建辅助 | **9 项通过** |
+| 最终 Release 构建 | 图标位置微调后重新构建通过 |
+| 最终 Release Lint | **0 Error，55 Warning**；并非无警告 |
+| Android 13 ARM64 instrumented tests | 默认 compatibility 配置下 **22 项通过**，23.895 秒 |
+| 真实 SAF 根授权测试 | **1 项因模拟器授权环境阻塞，未通过** |
 
-Lint 的剩余警告主要是已固定依赖存在更新、target SDK 35、侧载文件管理权限及中文专用界面的资源/KTX 建议；没有通过关闭检查或基线隐藏错误。16 KB 检查是二进制与打包对齐，未声称在 16 KB 内存页设备上运行过。
+JVM 计数亲读 `kgm-core/build/test-results/test/TEST-*.xml` 与 `app/build/test-results/testDebugUnitTest/TEST-*.xml`。图示修订前功能验证基线包的 Android 复验日志为本机 `/private/tmp/kgm2mp3-android-tests-1.1-final.log`，结果 `OK (22 tests)`；23 项完整测试首次运行中，22 项通过，SAF 1 项失败于初始授权步骤。
 
-## 用户真实 KGM
+`connectedReleaseAndroidTest` 在离线构建环境缺少 UTP 依赖，改为通过 adb 执行已构建的同一 Release 测试 APK。该运行方式实际执行下面 22 项，并非以跳过测试代替；SAF 项另行保留阻塞记录。
 
-使用本地样本，不把歌曲放进测试 APK、源码或发布包。样本为旧版 KGM v3 type 1。
+### Android 22 项通过范围
 
-- 解密音频：44.1 kHz、立体声、16-bit FLAC，228 秒。
-- 桌面校验：2,455 帧 CRC 全部正确；10,054,800 个样本；完整 PCM MD5 `3a98f6980c1423c19c3ba2c1daa52269` 与 STREAMINFO 一致。
-- 音频后有 30 字节非音频尾部。先核验完整 PCM，再无损重编码整理，再核验样本数、音讯摘要及严格解码；损坏/截断样本明确拒绝。
-- Android APK 成功生成四种格式，均严格完整解码通过；FLAC 再次验证完整 PCM MD5，源 KGM SHA-256 保持不变。
+- **原生转换与恢复 7 项**：实际载入音讯原生库，真实 KGM 转 MP3 / FLAC / WAV / M4A，源文件保留，损坏输入拒绝，选歌后文件变化拒绝，取消不进入编码，严格验证和无损恢复状态复位。
+- **签名更新 fixture 2 项**：同新套件、较高 versionCode、同新签名生成系统安装 Intent；较高版本但旧签名明确拒绝。此项验证更新安装包校验与 Intent，不等同于已执行未来正式版本的覆盖安装。
+- **真实 APK archive 5 项**：当前版本拒绝作为升级，`.part` 文件仍按真实签名元数据检查，其他 App 和损坏 APK 拒绝，实际原生库 ABI 与模拟器相符。
+- **GitHub 在线检查 1 项**：通过正式 `UpdateManager.check(callback)` 真正访问固定 `BayenC/kgm2mp3-usb`，当前公开 `v1.0.0` 不被误报为 1.1 更新；显式启用 `runLiveUpdateCheck=true`，网络失败会使测试失败。网络仅为测试模拟器设置主机代理，产品未加入代理配置。
+- **USB 删除 5 项**：仅删除已选根目录歌曲，保护手机原歌、未选歌曲和子目录；变化快照拒绝；取消保留未删歌曲；监听器重接不重复执行；转移与删除互斥；中断不自动续删；真实卸载虚拟移动卷后停止删除，重挂后原文件保留。
+- **USB 转移 2 项**：真实转码、复制、同名事务覆盖；复制中取消保持原有目标歌曲并清理临时文件。
 
-| 输出 | 编码 | 时长 | 文件大小 |
-|---|---|---:|---:|
-| MP3 | MP3 / 192 kbps | 228 秒 | 5,473,929 bytes |
-| FLAC | FLAC / 无损 | 228 秒 | 26,860,253 bytes |
-| WAV | PCM 16-bit | 228 秒 | 40,219,362 bytes |
-| M4A | AAC / 192 kbps | 228 秒 | 5,625,432 bytes |
+这里的移动存储由模拟器公开虚拟卷提供，卸载确实发生在 Android 存储系统；它不替代实体 USB OTG 拔插测试。
 
-已用 Android 运行诊断确认 FFmpegKit 8.1.7 的 thread-local `exit_on_error` 未清理问题；校验/限定恢复显式 `-noxerror`，普通转码和最终完整解码保留 `-xerror`。诊断证明原样本默认 hash 失败，而重置后 hash 完整相符；恢复结果仍经严格解码及相同 PCM 摘要验证。
+### SAF 阻塞与未验证范围
 
-## Android 集成
+`UsbDeletionIntegrationTest.realSafGrantEnumeratesExactRootUriAndProtectsNestedFiles` 要求系统文件选择器授予真实、持久化的 USB 根目录读写权限。Android 13 把本次虚拟 SD 根目录视作可靠存储，文件选择器显示 “Can't use this folder”，根目录的 “USE THIS FOLDER” 按钮禁用，无法取得初始 grant。
 
-- 原生库冷启动、普通音频转 MP3、真实 KGM 四格式、损坏输入、读取/原生转码取消、源文件变化拒绝。
-- 在模拟器实际挂载的虚拟外接磁盘根目录执行生产 TransferEngine/UsbWriter：转换、读回 SHA-256、同名覆盖；时长由 2 秒正确替换为 4 秒；源文件保留；复制取消保留旧歌并清理暂存/日志。
-- 实际 Android PackageManager 验证安装 APK、`.part` 后缀暂存包、错误包名和损坏安装包；拒绝同版本包。
-- 更新策略测试拒绝非可信 HTTPS 主机、异常端口、错误/歧义 checksum、降级与不同/缺失签名。尚未建立在线 Release 仓库，不能把在线升级下载视为已验证。
+单独重试初始授权仍失败；临时 compatibility flag 调整也未解除限制，随后已恢复系统默认配置。产品仍保持 target API 35、原有权限与根目录限制；测试没有用子目录、伪造 grant 或假 provider 冒充成功。
 
-## 正式 APK 手动流程
+因此 **SAF 根目录删除链路尚未通过实际运行验证**。通过的直接路径测试、JVM 边界策略和代码审查不能代替它，需在允许授予根目录的真实 USB / 手机环境补测。
 
-使用最终 `dist/music-transfer-1.0.0-universal.apk` 验证：首次文件授权跳转并开启正确系统开关；返回自动读取歌曲；设置四种格式排版正常；选定模拟外接根目录；点右侧圆圈后显示「已选 1 首」；点「转换并转移」并允许系统通知；前台服务完整转换和写入，主界面显示「成功 1 首」。根目录 MP3 为 228 秒、44.1 kHz、立体声、5,473,929 bytes。手机 KGM 仍在列表。
+### 最终 Lint 警告
 
-切换「USB 歌曲」后自动显示刚转移的 `validation-sample.mp3`，读到 1 首。界面截图见 [主界面](screenshots/home.png)、[设置](screenshots/settings.png)、[完成结果](screenshots/completed.png)、[USB 歌曲](screenshots/usb.png)。截图中的 Virtual SD card 是模拟器挂载磁盘，不是实体 U 盘。
+亲读 `app/build/reports/lint-results-release.xml`：总计 55 条 Warning，没有 Error。
 
-正式 APK SHA-256：`ec43ea8fab3e53fec7319bade8709ffbfbee56df9a379e2d677ddf049293e4a0`。
+| 类别 | 数量 |
+|---|---:|
+| `UseKtx` | 35 |
+| `SetTextI18n` | 6 |
+| `OldTargetApi` / `AndroidGradlePluginVersion` / `GradleDependency` / `NewerVersionAvailable` | 8 |
+| `ScopedStorage` | 1 |
+| `ChromeOsAbiSupport` | 1 |
+| `DataExtractionRules` | 1 |
+| `ObsoleteSdkInt` | 1 |
+| `MonochromeLauncherIcon` | 2 |
 
-## 需要实体设备最终确认
+警告涉及 KTX 写法、中文界面资源、依赖更新提示、广泛文件权限、正式包只含 ARM64、备份规则和图标资源。这里只记录检查结果，没有把警告计为通过或据此改变当前依赖、权限和发布目标。
 
-- 小米 10S / HyperOS 的 OTG 挂载和 USB 根目录读写。
-- 手机上的下载目录实时变化及熄屏长批次行为。
-- USB 拔插过程中硬件与文件系统的实际恢复行为。
-- 车机的 MP3 播放、中文歌曲名、USB 文件系统兼容性。
-- Android 8–12 及 14 以上的实际运行；最低 SDK 26 已在编译/API 检查验证。
+## 最终 APK 签名与对齐
 
-模拟器与 JVM 测试可以覆盖软件逻辑，但不能证明真实 USB 硬件或车机已经通过验收。
+最终正式 APK 的 `aapt2` 包身份检查为 `com.kgm2mp3_usb.app`、versionCode 2、versionName 1.1.0、min API 26、target API 35。签名证书 SHA-256 与上表一致，RSA 3072，APK v2 签名验证通过。
+
+`zipalign -c -P 16` 检查通过。仅包含 10 个 ARM64 原生库，均为未压缩 ELF64；全部 `PT_LOAD` 的对齐为 16384，且 `(offset - vaddr) % 16384 = 0`。这些检查验证 APK / ELF 对齐，不等同于已在 16 KB 内存页实体手机运行。
+
+## 最终正式包界面与操作验证
+
+以下操作测试在图示修订前的功能验证基线 APK（SHA-256 `1addb2fcbf8794486fd5508b5f7cbed86b88d345ef058c10282e81f85fbd9913`）完成。54 项 JVM、9 项 Python 与 22 项 Android 测试也属于该基线的记录。本轮只调整图标资源，已比对当前包与基线的全部 DEX 和 10 个 ARM64 原生库，字节内容相同；没有把原功能测试标成在新图示包上重跑。
+
+- **小屏与大字体**：320 dp × 569 dp、fontScale 1.3 的紧凑界面中，四个输出格式完整可见，歌曲标题和选择圆圈可见且可逐首选择，底部「转移」可点击。任务运行时取消入口可见；歌曲格式／大小文字的下缘可能需要滚动，没有把每行全高都标为始终可见。
+- **选择独立与后台返回**：进入后台再返回，手机已选 1 首、USB 已选 0 首保持；两个分页面的勾选互不影响。USB 页没有全选入口。
+- **删除确认与取消**：界面逐首勾选 `ui-selected` 一首，确认框显示 1 首及不可撤销说明；取消后文件保持完整。再次确认后只有所选文件删除，未选的 `ui-keep` 和 `validation-sample` 保留，手机 KGM 的 SHA-256 前后相同。
+- **小屏实际转移**：在同一小屏界面选择 MP3 并点「转移」，最后显示成功 1 首。输出为 5,473,929 bytes；`ffprobe` 验证 MP3、44,100 Hz、双声道、228 秒；手机 KGM 的 SHA-256 前后相同。
+- **格式保存**：改为 FLAC，重新启动 App 和同签名 `install -r` 重新安装后仍保存 FLAC，随后恢复 MP3。
+- **主页与设置**：主页不再显示 USB 状态提示条或底部格式／保留／覆盖提示；设置没有输出格式或高级设置。首次 MP3、新路径扫描样本、新旧 App 共存均已验证。
+- **按压反馈**：按钮按住时背景由 RGB `(232, 239, 236)` 变为 `(203, 221, 213)`。
+
+操作截图来自上述功能验证基线包；桌面图标截图已更新为本轮安装后的实际画面。保存目录为 `docs/screenshots/1.1/`：
+
+| 画面 | 截图 |
+|---|---|
+| 手机歌曲主页 | [home.png](screenshots/1.1/home.png) |
+| USB 逐首选择，无全选 | [usb.png](screenshots/1.1/usb.png) |
+| 删除数量与不可撤销确认 | [delete-confirm.png](screenshots/1.1/delete-confirm.png) |
+| 简化设置 | [settings.png](screenshots/1.1/settings.png) |
+| 320 dp / fontScale 1.3 | [small-font.png](screenshots/1.1/small-font.png) |
+| 小屏任务运行与取消入口 | [small-busy.png](screenshots/1.1/small-busy.png) |
+| 小屏成功转移结果 | [small-result.png](screenshots/1.1/small-result.png) |
+| 仅所选歌曲删除后的结果 | [delete-result.png](screenshots/1.1/delete-result.png) |
+| 桌面图标 | [launcher.png](screenshots/1.1/launcher.png) |
+
+本轮按用户参考图改成连续圆润双音符，保留原青绿 `#16776B` 与白色配色；再向左微移 1.25 个 viewport 单位（580 像素预览约 10 像素），大小不变。预览四角 alpha 为 0，不包含参考图的白色外角。正式 APK 已重新构建，Lint 0 Error / 55 Warning、同新签名 v2 验证、ZIP 16 KB 对齐及同身份 `install -r` 安装通过；新图标已在 Android 13 Launcher 实际显示并可视核对，圆形遮罩无切角。SVG / PNG 方形预览也已查看。
+
+预览：[logo-1.1.png](assets/logo-1.1.png)；矢量原图：[logo-1.1.svg](assets/logo-1.1.svg)。
+
+## 实体设备仍需确认
+
+- 小米 10S / HyperOS 真实 OTG 拔插、直接路径和 SAF 根目录读写、删除。
+- 熄屏长批次、实际车机播放、中文歌名和 USB 文件系统兼容性。
+- Android 8–12、14 以上及 16 KB 内存页设备的实际运行。
+
+上述未验证项保留为限制，没有标成通过。1.0 历史验证见 [VALIDATION-1.0.md](VALIDATION-1.0.md)。

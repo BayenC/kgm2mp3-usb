@@ -4,8 +4,8 @@ local.properties
 signing/
 *.iml
 .idea/
-dist/*.apk
-dist/*.zip
+dist/
+docx/
 .DS_Store
 __pycache__/
 *.pyc
