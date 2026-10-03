@@ -5,7 +5,7 @@ signing/
 *.iml
 .idea/
 dist/
-docx/
+docs/
 .DS_Store
 __pycache__/
 *.pyc
